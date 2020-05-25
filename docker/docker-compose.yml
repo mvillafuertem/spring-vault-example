@@ -1,0 +1,40 @@
+version: '3.7'
+
+services:
+
+  vault-agent:
+    container_name: vault-agent
+    image: vault:1.4.2
+    command: vault agent -config=/home/vault/agent.hcl
+    ports:
+      - 8100:8100
+    environment:
+      VAULT_CACERT: /vault/config/ssl/vault-cert.pem
+    volumes:
+      - ./agent.hcl:/home/vault/agent.hcl:ro
+      - ./ssl:/vault/config/ssl:ro
+      - ./role_id/:/home/vault/role_id
+      - ./secret_id/:/home/vault/secret_id
+    depends_on:
+      - vault
+    external_links:
+      - "vault:vault.local"
+    cap_add:
+      - IPC_LOCK
+
+  vault:
+    container_name: vault
+    hostname: "vault.local"
+    image: vault:1.4.2
+    command: /bin/sh /vault/config/startup.sh
+    ports:
+      - 8200:8200
+      - 8280:8280
+    environment:
+      VAULT_API_ADDR: http://0.0.0.0:8200
+    volumes:
+      - ./startup.sh:/vault/config/startup.sh:ro
+      - ./config.json:/vault/config/config.json:ro
+      - ./libressl.conf:/vault/config/libressl.conf:ro
+      - ./approlePolicy.hcl:/home/vault/approlePolicy.hcl:ro
+      - ./ssl:/vault/config/ssl
